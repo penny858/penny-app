@@ -10,14 +10,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Penny工作台">
   <meta name="theme-color" content="#FF69B4">
-  <link rel="manifest" href="manifest.json?v=20">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png?v=20">
-  <link rel="icon" type="image/png" href="icons/favicon-32-v2.png?v=20">
+  <link rel="manifest" href="manifest.json?v=21">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png?v=21">
+  <link rel="icon" type="image/png" href="icons/favicon-32-v2.png?v=21">
   <title>Penny的工作台</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="excel_data.js?v=20"></script>
-  <script src="industry_pool.js?v=20"></script>
-  <script src="vocab_pool.js?v=20"></script>
+  <script src="excel_data.js?v=21"></script>
+  <script src="industry_pool.js?v=21"></script>
+  <script src="vocab_pool.js?v=21"></script>
   <style>
     /* ========== CSS变量 - 粉色可爱主题 ========== */
     :root {
@@ -1505,6 +1505,106 @@
     .habit-day:hover {
       transform: scale(1.1);
     }
+
+    /* ========== 锁屏 ========== */
+    .lock-screen {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(135deg, #FF69B4 0%, #FFA1C5 50%, #FFC1D9 100%);
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .lock-container {
+      text-align: center;
+      width: 280px;
+      padding: 32px 24px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 28px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+      backdrop-filter: blur(10px);
+    }
+
+    .lock-puppy {
+      font-size: 56px;
+      line-height: 1;
+      margin-bottom: 12px;
+      animation: puppyBounce 1.5s ease-in-out infinite;
+    }
+
+    .lock-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .lock-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+
+    .lock-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: 16px;
+      text-align: center;
+      letter-spacing: 4px;
+      margin-bottom: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+
+    .lock-input:focus {
+      border-color: var(--pink-500);
+    }
+
+    .lock-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--pink-500);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 8px;
+    }
+
+    .lock-btn:hover {
+      background: var(--pink-600);
+    }
+
+    .lock-btn:active {
+      transform: scale(0.97);
+    }
+
+    .lock-hint {
+      font-size: 11px;
+      color: var(--danger);
+      min-height: 16px;
+      margin-top: 4px;
+    }
+
+    .lock-setup {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-color);
+    }
   </style>
 </head>
 <body>
@@ -1664,6 +1764,22 @@
 
   <!-- Toast提示 -->
   <div class="toast" id="toast"></div>
+
+  <!-- 锁屏遮罩 -->
+  <div class="lock-screen" id="lockScreen" style="display:none;">
+    <div class="lock-container">
+      <div class="lock-puppy">🐶</div>
+      <div class="lock-title">Penny的工作台</div>
+      <div class="lock-subtitle" id="lockSubtitle">请输入密码解锁</div>
+      <input type="password" class="lock-input" id="lockPassword" placeholder="输入密码" maxlength="20" autocomplete="off">
+      <button class="lock-btn" id="lockBtn" onclick="unlockApp()">🔓 解锁</button>
+      <div class="lock-hint" id="lockHint"></div>
+      <div class="lock-setup" id="lockSetup" style="display:none;">
+        <input type="password" class="lock-input" id="lockPasswordConfirm" placeholder="再次输入密码" maxlength="20" autocomplete="off">
+        <button class="lock-btn" onclick="setAppPassword()">🔑 设置密码</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     // ========== 数据存储层 ==========
@@ -6310,6 +6426,36 @@
 
         <div class="card">
           <div class="card-header">
+            <span class="card-title">🔒 隐私安全</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;padding:8px;background:var(--pink-50);border-radius:var(--radius-sm);border:1px dashed var(--border-color);">
+            🔐 App密码锁：每次打开App需要输入密码，防止别人偷看你的数据<br>
+            🛡️ 云端加密：同步数据已加密，即使别人看到文件也是乱码
+          </div>
+          ${localStorage.getItem('penny_app_lock') ? `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-color);">
+              <div>
+                <span style="font-size:13px;font-weight:600;color:var(--success);">✅ 密码锁已开启</span>
+                <div style="font-size:11px;color:var(--text-light);">每次打开App都需要密码</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button class="btn btn-secondary" onclick="changeAppPassword()" style="flex:1;">🔑 修改密码</button>
+              <button class="btn btn-danger" onclick="removeAppPassword()" style="flex:1;">🔓 关闭密码锁</button>
+            </div>
+          ` : `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-color);">
+              <div>
+                <span style="font-size:13px;font-weight:600;color:var(--warning);">⚠️ 密码锁未开启</span>
+                <div style="font-size:11px;color:var(--text-light);">别人可以直接打开你的App</div>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="showLockScreen(true);document.getElementById('lockScreen').style.display='flex';" style="width:100%;margin-top:8px;">🔒 开启密码锁</button>
+          `}
+        </div>
+
+        <div class="card">
+          <div class="card-header">
             <span class="card-title">📦 本地数据管理</span>
           </div>
           <div style="display:flex;gap:8px;margin-top:8px;">
@@ -6371,6 +6517,48 @@
     }
 
     // 保存到云端：把所有penny_开头的localStorage数据打包上传到GitHub仓库
+    // ========== 同步数据加密/解密 ==========
+    // 用App密码作为加密密钥，XOR+Base64加密
+    function encryptData(plainText, key) {
+      if (!key) key = 'penny_default_key_2026';
+      const result = [];
+      for (let i = 0; i < plainText.length; i++) {
+        const charCode = plainText.charCodeAt(i) ^ key.charCodeAt(i % key.length);
+        result.push(String.fromCharCode(charCode));
+      }
+      // 加上标记前缀，标识这是加密数据
+      return 'ENC:' + btoa(unescape(encodeURIComponent(result.join(''))));
+    }
+
+    function decryptData(encText, key) {
+      if (!key) key = 'penny_default_key_2026';
+      // 检查是否是加密格式
+      if (!encText.startsWith('ENC:')) {
+        // 旧版未加密数据，直接返回
+        return encText;
+      }
+      try {
+        const encBody = encText.substring(4);
+        const decoded = decodeURIComponent(escape(atob(encBody)));
+        const result = [];
+        for (let i = 0; i < decoded.length; i++) {
+          const charCode = decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length);
+          result.push(String.fromCharCode(charCode));
+        }
+        return result.join('');
+      } catch (e) {
+        throw new Error('解密失败，密码可能不正确');
+      }
+    }
+
+    // 获取加密密钥（用App密码，如果没有则用默认密钥）
+    function getSyncKey() {
+      // 不直接用密码，而是用密码的hash作为密钥，更安全
+      const lock = localStorage.getItem('penny_app_lock');
+      if (lock) return lock;
+      return 'penny_default_key_2026';
+    }
+
     function saveToCloud() {
       const token = localStorage.getItem('penny_github_token');
       if (!token) { showToast('请先连接GitHub'); return; }
@@ -6398,6 +6586,8 @@
       allData._version = localStorage.getItem('penny_version');
 
       const jsonStr = JSON.stringify(allData);
+      // 加密数据
+      const encStr = encryptData(jsonStr, getSyncKey());
 
       // 获取文件当前SHA（如果存在）
       fetch(`https://api.github.com/repos/penny858/penny-app/contents/sync_data.json?ref=main`, {
@@ -6408,10 +6598,10 @@
         return null; // 文件不存在
       })
       .then(sha => {
-        // 上传/更新文件
+        // 上传/更新文件（加密后的内容）
         const body = {
-          message: `☁️ 云端同步 - ${new Date().toLocaleString('zh-CN')}`,
-          content: btoa(unescape(encodeURIComponent(jsonStr))),
+          message: `☁️ 云端同步(已加密) - ${new Date().toLocaleString('zh-CN')}`,
+          content: btoa(unescape(encodeURIComponent(encStr))),
           branch: 'main'
         };
         if (sha) body.sha = sha;
@@ -6452,7 +6642,9 @@
         return r.json();
       })
       .then(d => {
-        const jsonStr = decodeURIComponent(escape(atob(d.content)));
+        const rawStr = decodeURIComponent(escape(atob(d.content)));
+        // 解密数据
+        const jsonStr = decryptData(rawStr, getSyncKey());
         const allData = JSON.parse(jsonStr);
 
         // 覆盖本地数据
@@ -7496,10 +7688,136 @@
       localStorage.setItem(migrationKey, 'done');
     }
 
+    // ========== App密码锁 ==========
+    function hashPassword(pwd) {
+      // 简单哈希：不存明文，防直接查看localStorage
+      let hash = 0;
+      const salt = 'penny_salt_2026';
+      const str = salt + pwd + salt;
+      for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash = hash & hash;
+      }
+      return 'h' + Math.abs(hash).toString(36);
+    }
+
+    function checkAppLock() {
+      const savedHash = localStorage.getItem('penny_app_lock');
+      if (!savedHash) {
+        // 没设密码，显示设置密码界面
+        showLockScreen(true);
+      } else {
+        // 有密码，显示解锁界面
+        showLockScreen(false);
+      }
+    }
+
+    function showLockScreen(isSetup) {
+      const lock = document.getElementById('lockScreen');
+      const subtitle = document.getElementById('lockSubtitle');
+      const setup = document.getElementById('lockSetup');
+      const hint = document.getElementById('lockHint');
+      const input = document.getElementById('lockPassword');
+
+      lock.style.display = 'flex';
+
+      if (isSetup) {
+        subtitle.textContent = '首次使用，请设置App密码';
+        setup.style.display = 'block';
+        hint.textContent = '';
+      } else {
+        subtitle.textContent = '请输入密码解锁';
+        setup.style.display = 'none';
+        hint.textContent = '';
+      }
+
+      // 自动聚焦输入框
+      setTimeout(() => input.focus(), 100);
+
+      // 回车键解锁
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          if (isSetup) setAppPassword();
+          else unlockApp();
+        }
+      };
+      document.getElementById('lockPasswordConfirm').onkeydown = (e) => {
+        if (e.key === 'Enter') setAppPassword();
+      };
+    }
+
+    function unlockApp() {
+      const savedHash = localStorage.getItem('penny_app_lock');
+      const input = document.getElementById('lockPassword');
+      const hint = document.getElementById('lockHint');
+      const pwd = input.value;
+
+      if (!pwd) { hint.textContent = '请输入密码'; return; }
+
+      if (hashPassword(pwd) === savedHash) {
+        // 解锁成功
+        document.getElementById('lockScreen').style.display = 'none';
+        input.value = '';
+        hint.textContent = '';
+      } else {
+        hint.textContent = '❌ 密码错误，请重试';
+        input.value = '';
+        input.focus();
+        // 震动效果
+        if (navigator.vibrate) navigator.vibrate(100);
+        // 抖动动画
+        const container = document.querySelector('.lock-container');
+        container.style.animation = 'none';
+        setTimeout(() => { container.style.animation = 'puppyBounce 0.3s'; }, 10);
+      }
+    }
+
+    function setAppPassword() {
+      const pwd = document.getElementById('lockPassword').value;
+      const confirm = document.getElementById('lockPasswordConfirm').value;
+      const hint = document.getElementById('lockHint');
+
+      if (!pwd) { hint.textContent = '请输入密码'; return; }
+      if (pwd.length < 4) { hint.textContent = '密码至少4位'; return; }
+      if (pwd !== confirm) { hint.textContent = '两次密码不一致'; return; }
+
+      localStorage.setItem('penny_app_lock', hashPassword(pwd));
+      document.getElementById('lockScreen').style.display = 'none';
+      document.getElementById('lockPassword').value = '';
+      document.getElementById('lockPasswordConfirm').value = '';
+      hint.textContent = '';
+      showToast('🔒 App密码已设置');
+    }
+
+    function changeAppPassword() {
+      const savedHash = localStorage.getItem('penny_app_lock');
+      if (!savedHash) { showToast('请先在设置中设置密码'); return; }
+      const oldPwd = prompt('请输入当前密码：');
+      if (!oldPwd) return;
+      if (hashPassword(oldPwd) !== savedHash) { showToast('❌ 旧密码错误'); return; }
+      const newPwd = prompt('请输入新密码（至少4位）：');
+      if (!newPwd || newPwd.length < 4) { showToast('密码至少4位'); return; }
+      const confirmPwd = prompt('再次输入新密码：');
+      if (newPwd !== confirmPwd) { showToast('两次密码不一致'); return; }
+      localStorage.setItem('penny_app_lock', hashPassword(newPwd));
+      showToast('✅ 密码已修改');
+    }
+
+    function removeAppPassword() {
+      const savedHash = localStorage.getItem('penny_app_lock');
+      if (!savedHash) { showToast('当前没有设置密码'); return; }
+      const pwd = prompt('请输入当前密码以关闭密码锁：');
+      if (!pwd) return;
+      if (hashPassword(pwd) !== savedHash) { showToast('❌ 密码错误'); return; }
+      localStorage.removeItem('penny_app_lock');
+      showToast('🔓 密码锁已关闭');
+      renderSettings();
+    }
+
     function init() {
-      // 强制清除旧缓存（v20 修复灵感编辑按钮点击）
-      if (localStorage.getItem('penny_version') !== 'v20') {
-        localStorage.setItem('penny_version', 'v20');
+      // 强制清除旧缓存（v21 密码锁+同步加密）
+      if (localStorage.getItem('penny_version') !== 'v21') {
+        localStorage.setItem('penny_version', 'v21');
         // 注销旧Service Worker
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(regs => {
@@ -7623,14 +7941,14 @@
             caches.keys().then(names => {
               Promise.all(names.map(name => caches.delete(name))).then(() => {
                 // 重新注册新的SW
-                navigator.serviceWorker.register('sw.js?v=20').then(reg => {
+                navigator.serviceWorker.register('sw.js?v=21').then(reg => {
                   console.log('SW v5 registered');
                 }).catch(err => console.log('SW注册失败:', err));
               });
             });
           });
         }).catch(() => {
-          navigator.serviceWorker.register('sw.js?v=20');
+          navigator.serviceWorker.register('sw.js?v=21');
         });
       }
 
@@ -7649,6 +7967,9 @@
           }, 3000);
         }
       });
+
+      // 检查App密码锁（最后执行，确保页面加载完成后再锁屏）
+      checkAppLock();
     }
 
     // 启动

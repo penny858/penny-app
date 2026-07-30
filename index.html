@@ -10,14 +10,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Penny工作台">
   <meta name="theme-color" content="#FF69B4">
-  <link rel="manifest" href="manifest.json?v=18">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png?v=18">
-  <link rel="icon" type="image/png" href="icons/favicon-32-v2.png?v=18">
+  <link rel="manifest" href="manifest.json?v=19">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png?v=19">
+  <link rel="icon" type="image/png" href="icons/favicon-32-v2.png?v=19">
   <title>Penny的工作台</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="excel_data.js?v=18"></script>
-  <script src="industry_pool.js?v=18"></script>
-  <script src="vocab_pool.js?v=18"></script>
+  <script src="excel_data.js?v=19"></script>
+  <script src="industry_pool.js?v=19"></script>
+  <script src="vocab_pool.js?v=19"></script>
   <style>
     /* ========== CSS变量 - 粉色可爱主题 ========== */
     :root {
@@ -7489,9 +7489,9 @@
     }
 
     function init() {
-      // 强制清除旧缓存（v18云端同步+设置页面+导出导入）
-      if (localStorage.getItem('penny_version') !== 'v18') {
-        localStorage.setItem('penny_version', 'v18');
+      // 强制清除旧缓存（v19 Emoji小狗图标）
+      if (localStorage.getItem('penny_version') !== 'v19') {
+        localStorage.setItem('penny_version', 'v19');
         // 注销旧Service Worker
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(regs => {
@@ -7615,14 +7615,14 @@
             caches.keys().then(names => {
               Promise.all(names.map(name => caches.delete(name))).then(() => {
                 // 重新注册新的SW
-                navigator.serviceWorker.register('sw.js?v=18').then(reg => {
+                navigator.serviceWorker.register('sw.js?v=19').then(reg => {
                   console.log('SW v5 registered');
                 }).catch(err => console.log('SW注册失败:', err));
               });
             });
           });
         }).catch(() => {
-          navigator.serviceWorker.register('sw.js?v=18');
+          navigator.serviceWorker.register('sw.js?v=19');
         });
       }
 

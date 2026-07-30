@@ -10,14 +10,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Penny工作台">
   <meta name="theme-color" content="#FF69B4">
-  <link rel="manifest" href="manifest.json?v=19">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png?v=19">
-  <link rel="icon" type="image/png" href="icons/favicon-32-v2.png?v=19">
+  <link rel="manifest" href="manifest.json?v=20">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png?v=20">
+  <link rel="icon" type="image/png" href="icons/favicon-32-v2.png?v=20">
   <title>Penny的工作台</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="excel_data.js?v=19"></script>
-  <script src="industry_pool.js?v=19"></script>
-  <script src="vocab_pool.js?v=19"></script>
+  <script src="excel_data.js?v=20"></script>
+  <script src="industry_pool.js?v=20"></script>
+  <script src="vocab_pool.js?v=20"></script>
   <style>
     /* ========== CSS变量 - 粉色可爱主题 ========== */
     :root {
@@ -4218,7 +4218,15 @@
         ${i.source ? `<div class="detail-row"><div class="detail-label">来源</div><div class="detail-value"><span class="tag tag-purple">${i.source}</span></div></div>` : ''}
         ${i.relatedProject ? `<div class="detail-row"><div class="detail-label">关联</div><div class="detail-value">${Utils.escape(i.relatedProject)}</div></div>` : ''}
         <div class="detail-row"><div class="detail-label">时间</div><div class="detail-value">${Utils.formatDate(i.createdAt)}</div></div>
-      `, `<button class="btn btn-secondary" onclick="editInspiration('${id}');Modal.hide();">编辑</button><button class="btn btn-danger" onclick="deleteInspiration('${id}')">删除</button><button class="btn btn-secondary" onclick="Modal.hide()">关闭</button>`);
+      `, `<button class="btn btn-primary" onclick="handleInspirationEdit('${id}')" style="font-size:13px;">✏️ 编辑</button><button class="btn btn-danger" onclick="deleteInspiration('${id}')">删除</button><button class="btn btn-secondary" onclick="Modal.hide()">关闭</button>`);
+    }
+
+    // 在PWA/移动端使用更可靠的方式打开编辑窗口
+    function handleInspirationEdit(id) {
+      Modal.hide();
+      setTimeout(() => {
+        editInspiration(id);
+      }, 100);
     }
 
     function deleteInspiration(id) {
@@ -7489,9 +7497,9 @@
     }
 
     function init() {
-      // 强制清除旧缓存（v19 Emoji小狗图标）
-      if (localStorage.getItem('penny_version') !== 'v19') {
-        localStorage.setItem('penny_version', 'v19');
+      // 强制清除旧缓存（v20 修复灵感编辑按钮点击）
+      if (localStorage.getItem('penny_version') !== 'v20') {
+        localStorage.setItem('penny_version', 'v20');
         // 注销旧Service Worker
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(regs => {
@@ -7615,14 +7623,14 @@
             caches.keys().then(names => {
               Promise.all(names.map(name => caches.delete(name))).then(() => {
                 // 重新注册新的SW
-                navigator.serviceWorker.register('sw.js?v=19').then(reg => {
+                navigator.serviceWorker.register('sw.js?v=20').then(reg => {
                   console.log('SW v5 registered');
                 }).catch(err => console.log('SW注册失败:', err));
               });
             });
           });
         }).catch(() => {
-          navigator.serviceWorker.register('sw.js?v=19');
+          navigator.serviceWorker.register('sw.js?v=20');
         });
       }
 

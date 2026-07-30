@@ -1,4 +1,4 @@
-const CACHE_NAME = 'penny-workspace-v17';
+const CACHE_NAME = 'penny-workspace-v18';
 const CACHE_FILES = [
   './',
   './index.html',

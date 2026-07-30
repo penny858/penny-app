@@ -10,14 +10,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Penny工作台">
   <meta name="theme-color" content="#FF69B4">
-  <link rel="manifest" href="manifest.json?v=17">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png?v=17">
-  <link rel="icon" type="image/png" href="icons/favicon-32-v2.png?v=17">
+  <link rel="manifest" href="manifest.json?v=18">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png?v=18">
+  <link rel="icon" type="image/png" href="icons/favicon-32-v2.png?v=18">
   <title>Penny的工作台</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="excel_data.js?v=17"></script>
-  <script src="industry_pool.js?v=17"></script>
-  <script src="vocab_pool.js?v=17"></script>
+  <script src="excel_data.js?v=18"></script>
+  <script src="industry_pool.js?v=18"></script>
+  <script src="vocab_pool.js?v=18"></script>
   <style>
     /* ========== CSS变量 - 粉色可爱主题 ========== */
     :root {
@@ -6237,6 +6237,301 @@
     }
 
     // ========== 健康记录 ==========
+    // ========== 设置 & 云端同步 ==========
+    // GitHub同步配置（用仓库文件存储，不需要gist权限）
+    const GITHUB_SYNC_CONFIG = {
+      owner: 'penny858',
+      repo: 'penny-app',
+      branch: 'main',
+      path: 'sync_data.json',
+      token: '' // 用户自行输入
+    };
+
+    function renderSettings() {
+      const content = document.getElementById('content');
+      const savedToken = localStorage.getItem('penny_github_token') || '';
+      const lastSync = localStorage.getItem('penny_last_sync') || '';
+      const syncDirection = localStorage.getItem('penny_sync_direction') || '';
+      const version = localStorage.getItem('penny_version') || '';
+
+      content.innerHTML = `
+        <div class="card" style="background:linear-gradient(135deg,#FF69B4,#FFA1C5);color:white;">
+          <div style="font-size:16px;font-weight:700;">Penny的工作台</div>
+          <div style="font-size:13px;margin-top:4px;opacity:0.9;">版本 ${version} · 粉色可爱主题 🐶</div>
+          <div style="font-size:11px;margin-top:2px;opacity:0.7;">数据存储在浏览器本地，不联网也能使用</div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">☁️ 云端同步</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;padding:8px;background:var(--pink-50);border-radius:var(--radius-sm);border:1px dashed var(--border-color);">
+            💡 通过GitHub仓库同步数据，电脑和手机可以互传。先保存到云端，另一台设备再从云端同步下来。
+          </div>
+          ${savedToken ? `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-color);">
+              <div>
+                <span style="font-size:13px;font-weight:600;color:var(--success);">✅ GitHub已连接</span>
+                <div style="font-size:11px;color:var(--text-light);">仓库: penny858/penny-app</div>
+              </div>
+              <button class="btn btn-sm btn-secondary" onclick="disconnectGitHub()">断开</button>
+            </div>
+            ${lastSync ? `
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-color);">
+                <span style="font-size:12px;color:var(--text-secondary);">上次${syncDirection === 'upload' ? '保存' : '同步'}: ${lastSync}</span>
+              </div>
+            ` : ''}
+            <div style="display:flex;gap:8px;margin-top:12px;">
+              <button class="btn btn-primary" onclick="saveToCloud()" style="flex:1;">☁️ 保存到云端</button>
+              <button class="btn btn-secondary" onclick="syncFromCloud()" style="flex:1;">⬇️ 从云端同步</button>
+            </div>
+          ` : `
+            <div class="form-group" style="margin-top:8px;">
+              <label class="form-label">GitHub Personal Access Token</label>
+              <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;">
+                需要一个有 repo 权限的Token。创建方法：<br>
+                1. 打开 github.com/settings/tokens<br>
+                2. Generate new token (classic)<br>
+                3. 勾选 repo 权限 → 生成 → 复制
+              </div>
+              <input type="password" class="input" id="githubTokenInput" placeholder="ghp_xxxxxxxxxxxx" value="">
+            </div>
+            <button class="btn btn-primary" onclick="connectGitHub()" style="width:100%;">连接GitHub</button>
+          `}
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📦 本地数据管理</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="btn btn-secondary" onclick="exportLocalData()" style="flex:1;">📤 导出备份</button>
+            <button class="btn btn-secondary" onclick="importLocalData()" style="flex:1;">📥 导入恢复</button>
+          </div>
+          <div style="font-size:11px;color:var(--text-light);margin-top:8px;">导出会下载一个JSON文件，导入会从文件恢复数据</div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🗑️ 清除数据</span>
+          </div>
+          <button class="btn btn-danger" onclick="clearAllData()" style="width:100%;">清除所有本地数据</button>
+          <div style="font-size:11px;color:var(--danger);margin-top:6px;">⚠️ 不可恢复！清除后所有客户、灵感、计划等数据都会消失</div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">ℹ️ 关于</span>
+          </div>
+          <div style="font-size:13px;color:var(--text-secondary);line-height:1.8;">
+            <b>Penny的工作台</b> — 结合生活与工作的个人管理PWA<br>
+            模块：客户管理 · 项目推进 · 行业动态 · 灵感收集 · 社媒素材 · 热点收藏 · 学习计划 · 副业计划 · 日程提醒 · 健康记录 · 每日运势 · 单词卡<br>
+            技术栈：纯前端 PWA · localStorage · IndexedDB · Service Worker<br>
+            部署：GitHub Pages · 永久免费
+          </div>
+        </div>
+      `;
+    }
+
+    function connectGitHub() {
+      const token = document.getElementById('githubTokenInput').value.trim();
+      if (!token || !token.startsWith('ghp_')) {
+        showToast('请输入正确的GitHub Token（以ghp_开头）');
+        return;
+      }
+      // 验证Token
+      fetch('https://api.github.com/user', { headers: { Authorization: `token ${token}` } })
+        .then(r => r.json())
+        .then(d => {
+          if (d.login) {
+            localStorage.setItem('penny_github_token', token);
+            showToast(`✅ 已连接GitHub (${d.login})`);
+            renderSettings();
+          } else {
+            showToast('❌ Token无效，请检查');
+          }
+        })
+        .catch(() => showToast('❌ 连接失败，请检查网络'));
+    }
+
+    function disconnectGitHub() {
+      localStorage.removeItem('penny_github_token');
+      localStorage.removeItem('penny_last_sync');
+      localStorage.removeItem('penny_sync_direction');
+      showToast('已断开GitHub连接');
+      renderSettings();
+    }
+
+    // 保存到云端：把所有penny_开头的localStorage数据打包上传到GitHub仓库
+    function saveToCloud() {
+      const token = localStorage.getItem('penny_github_token');
+      if (!token) { showToast('请先连接GitHub'); return; }
+
+      showToast('⬆️ 正在保存到云端…');
+
+      // 收集所有数据
+      const allData = {};
+      const dbKeys = ['customers','projects','todos','industry','inspirations','materials','trends','learning','sidehustle','schedule','healthRecords','waterRecords','learningCheckins'];
+      dbKeys.forEach(k => {
+        const val = DB.get(k);
+        if (val && (Array.isArray(val) && val.length > 0) || (typeof val === 'object' && Object.keys(val).length > 0)) {
+          allData[k] = val;
+        }
+      });
+
+      // 也保存打卡、单词等数据
+      const extraKeys = ['penny_dailyVocab','penny_knownVocab','penny_dailyQuote','penny_checkin_date','penny_visit_streak','penny_last_visit','penny_side_templates_created'];
+      extraKeys.forEach(k => {
+        const val = localStorage.getItem(k);
+        if (val) allData[k] = JSON.parse(val);
+      });
+
+      allData._syncTime = new Date().toISOString();
+      allData._version = localStorage.getItem('penny_version');
+
+      const jsonStr = JSON.stringify(allData);
+
+      // 获取文件当前SHA（如果存在）
+      fetch(`https://api.github.com/repos/penny858/penny-app/contents/sync_data.json?ref=main`, {
+        headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
+      })
+      .then(r => {
+        if (r.status === 200) return r.json().then(d => d.sha);
+        return null; // 文件不存在
+      })
+      .then(sha => {
+        // 上传/更新文件
+        const body = {
+          message: `☁️ 云端同步 - ${new Date().toLocaleString('zh-CN')}`,
+          content: btoa(unescape(encodeURIComponent(jsonStr))),
+          branch: 'main'
+        };
+        if (sha) body.sha = sha;
+
+        return fetch(`https://api.github.com/repos/penny858/penny-app/contents/sync_data.json`, {
+          method: 'PUT',
+          headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json', Accept: 'application/vnd.github.v3+json' },
+          body: JSON.stringify(body)
+        });
+      })
+      .then(r => r.json())
+      .then(d => {
+        if (d.content) {
+          localStorage.setItem('penny_last_sync', new Date().toLocaleString('zh-CN'));
+          localStorage.setItem('penny_sync_direction', 'upload');
+          const sizeKB = Math.round(jsonStr.length / 1024);
+          showToast(`✅ 保存成功！云端数据 ${sizeKB}KB`);
+          renderSettings();
+        } else {
+          showToast(`❌ 保存失败: ${d.message || '未知错误'}`);
+        }
+      })
+      .catch(e => showToast(`❌ 网络错误: ${e.message}`));
+    }
+
+    // 从云端同步：下载GitHub仓库的sync_data.json，覆盖本地数据
+    function syncFromCloud() {
+      const token = localStorage.getItem('penny_github_token');
+      if (!token) { showToast('请先连接GitHub'); return; }
+
+      showToast('⬇️ 正在从云端同步…');
+
+      fetch(`https://api.github.com/repos/penny858/penny-app/contents/sync_data.json?ref=main`, {
+        headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
+      })
+      .then(r => {
+        if (r.status === 404) throw new Error('云端暂无数据，请先在一台设备上「保存到云端」');
+        return r.json();
+      })
+      .then(d => {
+        const jsonStr = decodeURIComponent(escape(atob(d.content)));
+        const allData = JSON.parse(jsonStr);
+
+        // 覆盖本地数据
+        const dbKeys = ['customers','projects','todos','industry','inspirations','materials','trends','learning','sidehustle','schedule','healthRecords','waterRecords','learningCheckins'];
+        dbKeys.forEach(k => {
+          if (allData[k]) DB.set(k, allData[k]);
+        });
+
+        // 恢复额外数据
+        const extraKeys = ['penny_dailyVocab','penny_knownVocab','penny_dailyQuote','penny_checkin_date','penny_visit_streak','penny_last_visit','penny_side_templates_created'];
+        extraKeys.forEach(k => {
+          if (allData[k]) localStorage.setItem(k, JSON.stringify(allData[k]));
+        });
+
+        localStorage.setItem('penny_last_sync', new Date().toLocaleString('zh-CN'));
+        localStorage.setItem('penny_sync_direction', 'download');
+
+        // 刷新页面
+        const sizeKB = Math.round(jsonStr.length / 1024);
+        showToast(`✅ 同步成功！已恢复 ${sizeKB}KB 数据，页面即将刷新`);
+        setTimeout(() => { location.reload(); }, 1500);
+      })
+      .catch(e => showToast(`❌ 同步失败: ${e.message}`));
+    }
+
+    // 本地导出
+    function exportLocalData() {
+      const allData = {};
+      const dbKeys = ['customers','projects','todos','industry','inspirations','materials','trends','learning','sidehustle','schedule','healthRecords','waterRecords','learningCheckins'];
+      dbKeys.forEach(k => { const v = DB.get(k); if (v) allData[k] = v; });
+      const extraKeys = ['penny_dailyVocab','penny_knownVocab','penny_checkin_date','penny_visit_streak','penny_last_visit','penny_side_templates_created'];
+      extraKeys.forEach(k => { const v = localStorage.getItem(k); if (v) allData[k] = JSON.parse(v); });
+      allData._exportTime = new Date().toISOString();
+
+      const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `penny_backup_${Utils.todayStr()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('📤 备份文件已下载');
+    }
+
+    // 本地导入
+    function importLocalData() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const allData = JSON.parse(ev.target.result);
+            const dbKeys = ['customers','projects','todos','industry','inspirations','materials','trends','learning','sidehustle','schedule','healthRecords','waterRecords','learningCheckins'];
+            dbKeys.forEach(k => { if (allData[k]) DB.set(k, allData[k]); });
+            const extraKeys = ['penny_dailyVocab','penny_knownVocab','penny_checkin_date','penny_visit_streak','penny_last_visit','penny_side_templates_created'];
+            extraKeys.forEach(k => { if (allData[k]) localStorage.setItem(k, JSON.stringify(allData[k])); });
+            showToast('📥 数据已恢复，页面即将刷新');
+            setTimeout(() => { location.reload(); }, 1500);
+          } catch (err) {
+            showToast('❌ 文件格式错误，请选择正确的备份文件');
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+
+    // 清除所有数据
+    function clearAllData() {
+      if (!confirm('⚠️ 确定要清除所有数据吗？\n\n客户、灵感、学习计划、副业计划等全部数据都会消失，不可恢复！')) return;
+      if (!confirm('再确认一次：真的要全部清除吗？')) return;
+      const dbKeys = ['customers','projects','todos','industry','inspirations','materials','trends','learning','sidehustle','schedule','healthRecords','waterRecords','learningCheckins'];
+      dbKeys.forEach(k => localStorage.removeItem('penny_' + k));
+      localStorage.removeItem('penny_dailyVocab');
+      localStorage.removeItem('penny_knownVocab');
+      localStorage.removeItem('penny_side_templates_created');
+      localStorage.removeItem('penny_checkin_date');
+      localStorage.removeItem('penny_visit_streak');
+      localStorage.removeItem('penny_last_visit');
+      showToast('🗑️ 所有数据已清除，页面即将刷新');
+      setTimeout(() => { location.reload(); }, 1500);
+    }
+
     function renderHealth() {
       const content = document.getElementById('content');
       const records = DB.get('healthRecords').sort((a,b) => new Date(b.date) - new Date(a.date));
@@ -7194,9 +7489,9 @@
     }
 
     function init() {
-      // 强制清除旧缓存（v17小狗图标+每日打卡+每日单词卡）
-      if (localStorage.getItem('penny_version') !== 'v17') {
-        localStorage.setItem('penny_version', 'v17');
+      // 强制清除旧缓存（v18云端同步+设置页面+导出导入）
+      if (localStorage.getItem('penny_version') !== 'v18') {
+        localStorage.setItem('penny_version', 'v18');
         // 注销旧Service Worker
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(regs => {
@@ -7320,14 +7615,14 @@
             caches.keys().then(names => {
               Promise.all(names.map(name => caches.delete(name))).then(() => {
                 // 重新注册新的SW
-                navigator.serviceWorker.register('sw.js?v=17').then(reg => {
+                navigator.serviceWorker.register('sw.js?v=18').then(reg => {
                   console.log('SW v5 registered');
                 }).catch(err => console.log('SW注册失败:', err));
               });
             });
           });
         }).catch(() => {
-          navigator.serviceWorker.register('sw.js?v=17');
+          navigator.serviceWorker.register('sw.js?v=18');
         });
       }
 

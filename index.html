@@ -10,14 +10,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Penny工作台">
   <meta name="theme-color" content="#FF69B4">
-  <link rel="manifest" href="manifest.json?v=22">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png?v=22">
-  <link rel="icon" type="image/png" href="icons/favicon-32-v2.png?v=22">
+  <link rel="manifest" href="manifest.json?v=23">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png?v=23">
+  <link rel="icon" type="image/png" href="icons/favicon-32-v2.png?v=23">
   <title>Penny的工作台</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="excel_data.js?v=22"></script>
-  <script src="industry_pool.js?v=22"></script>
-  <script src="vocab_pool.js?v=22"></script>
+  <script src="excel_data.js?v=23"></script>
+  <script src="industry_pool.js?v=23"></script>
+  <script src="vocab_pool.js?v=23"></script>
   <style>
     /* ========== CSS变量 - 粉色可爱主题 ========== */
     :root {
@@ -4688,6 +4688,27 @@
       }, 100);
     }
 
+    function handleLearningEdit(id) {
+      Modal.hide();
+      setTimeout(() => {
+        editLearning(id);
+      }, 100);
+    }
+
+    function handleMaterialEdit(id) {
+      Modal.hide();
+      setTimeout(() => {
+        editMaterial(id);
+      }, 100);
+    }
+
+    function handleSidehustleEdit(id) {
+      Modal.hide();
+      setTimeout(() => {
+        editSidehustle(id);
+      }, 100);
+    }
+
     function deleteInspiration(id) {
       if (!confirm('确定删除这条灵感？')) return;
       DB.set('inspirations', DB.get('inspirations').filter(i => i.id !== id));
@@ -4906,7 +4927,7 @@
         ${m.hashtags ? `<div class="detail-row"><div class="detail-label">标签</div><div class="detail-value" style="color:var(--pink-600);">${Utils.escape(m.hashtags)}</div></div>` : ''}
         ${m.note ? `<div class="detail-row"><div class="detail-label">备注</div><div class="detail-value" style="white-space:pre-wrap;line-height:1.6;">${Utils.escape(m.note)}</div></div>` : ''}
         <div class="detail-row"><div class="detail-label">收藏时间</div><div class="detail-value">${Utils.formatDate(m.createdAt)}</div></div>
-      `, `<button class="btn btn-secondary" onclick="editMaterial('${m.id}');Modal.hide();">编辑</button><button class="btn btn-danger" onclick="deleteMaterial('${m.id}')">删除</button><button class="btn btn-secondary" onclick="Modal.hide()">关闭</button>`);
+      `, `<button class="btn btn-primary" onclick="handleMaterialEdit('${m.id}')" style="font-size:13px;">✏️ 编辑</button><button class="btn btn-danger" onclick="deleteMaterial('${m.id}')">删除</button><button class="btn btn-secondary" onclick="Modal.hide()">关闭</button>`);
     }
 
     function editMaterial(id) {
@@ -5648,7 +5669,7 @@
         </div>
         ${l.note ? `<div style="margin-top:12px;"><div style="font-weight:600;font-size:13px;">📝 动机/备注</div><div style="font-size:13px;color:var(--text-secondary);white-space:pre-wrap;line-height:1.6;">${Utils.escape(l.note)}</div></div>` : ''}
         ${l.resourceUrl ? `<div style="margin-top:8px;"><a href="${Utils.escape(l.resourceUrl)}" target="_blank" style="color:var(--pink-600);font-size:13px;">🔗 学习资源 ↗</a></div>` : ''}
-      `, `<button class="btn btn-secondary" onclick="editLearning('${id}');Modal.hide();">编辑</button><button class="btn btn-danger" onclick="deleteLearning('${id}')">删除</button><button class="btn btn-secondary" onclick="Modal.hide()">关闭</button>`);
+      `, `<button class="btn btn-primary" onclick="handleLearningEdit('${id}')" style="font-size:13px;">✏️ 编辑</button><button class="btn btn-danger" onclick="deleteLearning('${id}')">删除</button><button class="btn btn-secondary" onclick="Modal.hide()">关闭</button>`);
     }
 
     function toggleLearningTask(planId, taskIdx) {
@@ -6111,7 +6132,7 @@
             </div>
           </div>
         </div>
-      `, `<button class="btn btn-secondary" onclick="editSidehustle('${id}');Modal.hide();">编辑</button><button class="btn btn-danger" onclick="deleteSidehustle('${id}')">删除</button><button class="btn btn-primary" onclick="saveSideWeeklyLog('${id}')">保存日志</button><button class="btn btn-secondary" onclick="Modal.hide()">关闭</button>`);
+      `, `<button class="btn btn-primary" onclick="handleSidehustleEdit('${id}')" style="font-size:13px;">✏️ 编辑</button><button class="btn btn-danger" onclick="deleteSidehustle('${id}')">删除</button><button class="btn btn-primary" onclick="saveSideWeeklyLog('${id}')">保存日志</button><button class="btn btn-secondary" onclick="Modal.hide()">关闭</button>`);
     }
 
     function saveSideWeeklyLog(id) {
@@ -8159,8 +8180,8 @@
 
     function init() {
       // 强制清除旧缓存（v21 密码锁+同步加密）
-      if (localStorage.getItem('penny_version') !== 'v22') {
-        localStorage.setItem('penny_version', 'v22');
+      if (localStorage.getItem('penny_version') !== 'v23') {
+        localStorage.setItem('penny_version', 'v23');
         // 注销旧Service Worker
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(regs => {
@@ -8284,14 +8305,14 @@
             caches.keys().then(names => {
               Promise.all(names.map(name => caches.delete(name))).then(() => {
                 // 重新注册新的SW
-                navigator.serviceWorker.register('sw.js?v=22').then(reg => {
+                navigator.serviceWorker.register('sw.js?v=23').then(reg => {
                   console.log('SW v5 registered');
                 }).catch(err => console.log('SW注册失败:', err));
               });
             });
           });
         }).catch(() => {
-          navigator.serviceWorker.register('sw.js?v=22');
+          navigator.serviceWorker.register('sw.js?v=23');
         });
       }
 

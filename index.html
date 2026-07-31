@@ -10,14 +10,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Penny工作台">
   <meta name="theme-color" content="#FF69B4">
-  <link rel="manifest" href="manifest.json?v=21">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png?v=21">
-  <link rel="icon" type="image/png" href="icons/favicon-32-v2.png?v=21">
+  <link rel="manifest" href="manifest.json?v=22">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png?v=22">
+  <link rel="icon" type="image/png" href="icons/favicon-32-v2.png?v=22">
   <title>Penny的工作台</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="excel_data.js?v=21"></script>
-  <script src="industry_pool.js?v=21"></script>
-  <script src="vocab_pool.js?v=21"></script>
+  <script src="excel_data.js?v=22"></script>
+  <script src="industry_pool.js?v=22"></script>
+  <script src="vocab_pool.js?v=22"></script>
   <style>
     /* ========== CSS变量 - 粉色可爱主题 ========== */
     :root {
@@ -1605,6 +1605,111 @@
       padding-top: 12px;
       border-top: 1px solid var(--border-color);
     }
+
+    /* ========== 图片编辑器 ========== */
+    .img-editor-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 99998;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      padding: 16px;
+    }
+
+    .img-editor-canvas-wrap {
+      position: relative;
+      max-width: 90vw;
+      max-height: 60vh;
+      overflow: hidden;
+      border-radius: var(--radius-md);
+      background: #000;
+    }
+
+    .img-editor-canvas {
+      display: block;
+      max-width: 100%;
+      max-height: 60vh;
+    }
+
+    .img-editor-crop-box {
+      position: absolute;
+      border: 2px solid var(--pink-500);
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+      pointer-events: auto;
+      cursor: move;
+      touch-action: none;
+      transition: all 0.05s;
+    }
+
+    .img-editor-crop-handle {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      background: var(--pink-500);
+      border: 2px solid #fff;
+      border-radius: 50%;
+      pointer-events: auto;
+      cursor: pointer;
+      touch-action: none;
+    }
+
+    .img-editor-controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .img-editor-btn {
+      padding: 10px 18px;
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .img-editor-btn-primary {
+      background: var(--pink-500);
+      color: white;
+    }
+
+    .img-editor-btn-secondary {
+      background: rgba(255,255,255,0.15);
+      color: white;
+    }
+
+    .img-editor-btn-danger {
+      background: rgba(244,67,54,0.8);
+      color: white;
+    }
+
+    .img-editor-mode-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .img-editor-mode-tab {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      background: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+    }
+
+    .img-editor-mode-tab.active {
+      background: var(--pink-500);
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -1777,6 +1882,36 @@
       <div class="lock-setup" id="lockSetup" style="display:none;">
         <input type="password" class="lock-input" id="lockPasswordConfirm" placeholder="再次输入密码" maxlength="20" autocomplete="off">
         <button class="lock-btn" onclick="setAppPassword()">🔑 设置密码</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 图片编辑器 -->
+  <div class="img-editor-overlay" id="imgEditorOverlay">
+    <div class="img-editor-mode-tabs" id="imgEditorTabs">
+      <div class="img-editor-mode-tab active" onclick="setEditorMode('rotate')">🔄 旋转</div>
+      <div class="img-editor-mode-tab" onclick="setEditorMode('crop')">✂️ 裁剪</div>
+    </div>
+    <div class="img-editor-canvas-wrap" id="imgEditorCanvasWrap">
+      <canvas class="img-editor-canvas" id="imgEditorCanvas"></canvas>
+      <div class="img-editor-crop-box" id="imgEditorCropBox" style="display:none;"></div>
+    </div>
+    <div class="img-editor-controls" id="imgEditorControls">
+      <!-- 旋转模式按钮 -->
+      <div id="rotateControls" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+        <button class="img-editor-btn img-editor-btn-secondary" onclick="rotateImage(-90)">↺ 左转90°</button>
+        <button class="img-editor-btn img-editor-btn-secondary" onclick="rotateImage(90)">↻ 右转90°</button>
+        <button class="img-editor-btn img-editor-btn-danger" onclick="cancelImageEditor()">✕ 取消</button>
+        <button class="img-editor-btn img-editor-btn-primary" onclick="confirmImageEditor()">✅ 确认</button>
+      </div>
+      <!-- 裁剪模式按钮 -->
+      <div id="cropControls" style="display:none;gap:8px;flex-wrap:wrap;justify-content:center;">
+        <button class="img-editor-btn img-editor-btn-secondary" onclick="setCropRatio(0)">自由</button>
+        <button class="img-editor-btn img-editor-btn-secondary" onclick="setCropRatio(1)">1:1</button>
+        <button class="img-editor-btn img-editor-btn-secondary" onclick="setCropRatio(1.33)">4:3</button>
+        <button class="img-editor-btn img-editor-btn-secondary" onclick="setCropRatio(0.75)">3:4</button>
+        <button class="img-editor-btn img-editor-btn-danger" onclick="cancelImageEditor()">✕ 取消</button>
+        <button class="img-editor-btn img-editor-btn-primary" onclick="confirmCrop()">✂️ 裁剪</button>
       </div>
     </div>
   </div>
@@ -4050,6 +4185,204 @@
       });
     }
 
+    // ========== 图片编辑器 ==========
+    let _editorState = {
+      img: null,        // Image对象
+      rotation: 0,      // 当前旋转角度
+      mode: 'rotate',   // 'rotate' 或 'crop'
+      cropRatio: 0,     // 裁剪比例 0=自由
+      cropX: 0, cropY: 0, cropW: 0, cropH: 0,  // 裁剪区域
+      callback: null,   // 编辑完成回调
+      canvas: null, ctx: null
+    };
+
+    function openImageEditor(base64, callback) {
+      const img = new Image();
+      img.onload = () => {
+        _editorState.img = img;
+        _editorState.rotation = 0;
+        _editorState.mode = 'rotate';
+        _editorState.callback = callback;
+        _editorState.canvas = document.getElementById('imgEditorCanvas');
+        _editorState.ctx = _editorState.canvas.getContext('2d');
+
+        document.getElementById('imgEditorOverlay').style.display = 'flex';
+        document.getElementById('rotateControls').style.display = 'flex';
+        document.getElementById('cropControls').style.display = 'none';
+        document.querySelector('.img-editor-mode-tab:nth-child(1)').classList.add('active');
+        document.querySelector('.img-editor-mode-tab:nth-child(2)').classList.remove('active');
+
+        renderEditorCanvas();
+      };
+      img.src = base64;
+    }
+
+    function renderEditorCanvas() {
+      const img = _editorState.img;
+      if (!img) return;
+      const canvas = _editorState.canvas;
+      const ctx = _editorState.ctx;
+      const maxDim = 500;
+
+      let w = img.width, h = img.height;
+      const isRotated = (_editorState.rotation / 90) % 2 !== 0;
+      if (isRotated) { [w, h] = [h, w]; }
+
+      // 缩放到适合屏幕
+      let scale = 1;
+      if (w > maxDim || h > maxDim) {
+        scale = Math.min(maxDim / w, maxDim / h);
+      }
+      canvas.width = w * scale;
+      canvas.height = h * scale;
+
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(_editorState.rotation * Math.PI / 180);
+      ctx.scale(scale, scale);
+      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+      ctx.restore();
+
+      // 如果是裁剪模式，更新裁剪框
+      if (_editorState.mode === 'crop') {
+        updateCropBox();
+      }
+    }
+
+    function setEditorMode(mode) {
+      _editorState.mode = mode;
+      document.querySelectorAll('.img-editor-mode-tab').forEach(t => t.classList.remove('active'));
+      const tabs = document.querySelectorAll('.img-editor-mode-tab');
+      if (mode === 'rotate') {
+        tabs[0].classList.add('active');
+        document.getElementById('rotateControls').style.display = 'flex';
+        document.getElementById('cropControls').style.display = 'none';
+        document.getElementById('imgEditorCropBox').style.display = 'none';
+      } else {
+        tabs[1].classList.add('active');
+        document.getElementById('rotateControls').style.display = 'none';
+        document.getElementById('cropControls').style.display = 'flex';
+        // 初始化裁剪区域为整张图片的80%
+        const canvas = _editorState.canvas;
+        _editorState.cropX = canvas.width * 0.1;
+        _editorState.cropY = canvas.height * 0.1;
+        _editorState.cropW = canvas.width * 0.8;
+        _editorState.cropH = canvas.height * 0.8;
+        updateCropBox();
+      }
+    }
+
+    function rotateImage(deg) {
+      _editorState.rotation = (_editorState.rotation + deg) % 360;
+      if (_editorState.rotation < 0) _editorState.rotation += 360;
+      renderEditorCanvas();
+    }
+
+    function setCropRatio(ratio) {
+      _editorState.cropRatio = ratio;
+      const canvas = _editorState.canvas;
+      const cx = _editorState.cropX + _editorState.cropW / 2;
+      const cy = _editorState.cropY + _editorState.cropH / 2;
+      if (ratio > 0) {
+        // 固定比例
+        const newW = _editorState.cropW;
+        const newH = newW / ratio;
+        _editorState.cropW = Math.min(newW, canvas.width - 4);
+        _editorState.cropH = Math.min(newH, canvas.height - 4);
+        _editorState.cropX = cx - _editorState.cropW / 2;
+        _editorState.cropY = cy - _editorState.cropH / 2;
+        // 确保不超出边界
+        _editorState.cropX = Math.max(2, Math.min(_editorState.cropX, canvas.width - _editorState.cropW - 2));
+        _editorState.cropY = Math.max(2, Math.min(_editorState.cropY, canvas.height - _editorState.cropH - 2));
+      }
+      updateCropBox();
+    }
+
+    function updateCropBox() {
+      const box = document.getElementById('imgEditorCropBox');
+      box.style.display = 'block';
+      box.style.left = _editorState.cropX + 'px';
+      box.style.top = _editorState.cropY + 'px';
+      box.style.width = _editorState.cropW + 'px';
+      box.style.height = _editorState.cropH + 'px';
+
+      // 设置裁剪框可拖动
+      box.onpointerdown = startDragCrop;
+    }
+
+    let _dragStart = null;
+    function startDragCrop(e) {
+      e.preventDefault();
+      const canvas = _editorState.canvas;
+      const rect = canvas.getBoundingClientRect();
+      _dragStart = {
+        x: e.clientX, y: e.clientY,
+        cropX: _editorState.cropX, cropY: _editorState.cropY,
+        canvasRect: rect, scale: rect.width / canvas.width
+      };
+      const box = document.getElementById('imgEditorCropBox');
+      box.setPointerCapture(e.pointerId);
+      box.onpointermove = dragCrop;
+      box.onpointerup = endDragCrop;
+    }
+
+    function dragCrop(e) {
+      if (!_dragStart) return;
+      const dx = (e.clientX - _dragStart.x) / _dragStart.scale;
+      const dy = (e.clientY - _dragStart.y) / _dragStart.scale;
+      const canvas = _editorState.canvas;
+      _editorState.cropX = Math.max(0, Math.min(_dragStart.cropX + dx, canvas.width - _editorState.cropW));
+      _editorState.cropY = Math.max(0, Math.min(_dragStart.cropY + dy, canvas.height - _editorState.cropH));
+      updateCropBox();
+    }
+
+    function endDragCrop(e) {
+      _dragStart = null;
+      const box = document.getElementById('imgEditorCropBox');
+      if (box.hasPointerCapture(e.pointerId)) box.releasePointerCapture(e.pointerId);
+      box.onpointermove = null;
+      box.onpointerup = null;
+    }
+
+    function confirmCrop() {
+      const canvas = _editorState.canvas;
+      const ctx = _editorState.ctx;
+      // 获取裁剪区域的像素数据
+      const cropCanvas = document.createElement('canvas');
+      cropCanvas.width = _editorState.cropW;
+      cropCanvas.height = _editorState.cropH;
+      const cropCtx = cropCanvas.getContext('2d');
+      cropCtx.drawImage(canvas, _editorState.cropX, _editorState.cropY, _editorState.cropW, _editorState.cropH, 0, 0, _editorState.cropW, _editorState.cropH);
+      const result = cropCanvas.toDataURL('image/jpeg', 0.7);
+      // 用裁剪后的图替换编辑器图片，回到旋转模式
+      const img = new Image();
+      img.onload = () => {
+        _editorState.img = img;
+        _editorState.rotation = 0;
+        setEditorMode('rotate');
+        renderEditorCanvas();
+        showToast('✂️ 已裁剪，可继续旋转或确认');
+      };
+      img.src = result;
+    }
+
+    function confirmImageEditor() {
+      const canvas = _editorState.canvas;
+      const result = canvas.toDataURL('image/jpeg', 0.7);
+      document.getElementById('imgEditorOverlay').style.display = 'none';
+      if (_editorState.callback) {
+        _editorState.callback(result);
+        _editorState.callback = null;
+      }
+      _editorState.img = null;
+    }
+
+    function cancelImageEditor() {
+      document.getElementById('imgEditorOverlay').style.display = 'none';
+      _editorState.img = null;
+      _editorState.callback = null;
+    }
+
     function renderInspirations() {
       const content = document.getElementById('content');
       const items = DB.get('inspirations').sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -4169,16 +4502,20 @@
       `, `<button class="btn btn-secondary" onclick="Modal.hide()">取消</button><button class="btn btn-primary" onclick="saveInspiration()">保存</button>`);
     };
 
-    // 图片预览
+    // 图片预览 → 打开编辑器
     function previewInspirationImage(input) {
       const preview = document.getElementById('inImagePreview');
       if (input.files && input.files[0]) {
         const file = input.files[0];
-        compressImage(file, 600, 0.6).then(base64 => {
-          preview.innerHTML = `<img src="${base64}" style="max-width:100%;max-height:200px;border-radius:var(--radius-sm);border:1px solid var(--border-color);">`;
-          // 存临时变量供save使用
-          window._tempInspirationImage = base64;
-        });
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          openImageEditor(e.target.result, (editedBase64) => {
+            preview.innerHTML = `<img src="${editedBase64}" style="max-width:100%;max-height:200px;border-radius:var(--radius-sm);border:1px solid var(--border-color);">`;
+            window._tempInspirationImage = editedBase64;
+            showToast('📷 图片已编辑');
+          });
+        };
+        reader.readAsDataURL(file);
       }
     }
 
@@ -4268,11 +4605,17 @@
     function previewEditInspirationImage(input) {
       const preview = document.getElementById('einImagePreview');
       if (input.files && input.files[0]) {
-        compressImage(input.files[0], 600, 0.6).then(base64 => {
-          preview.innerHTML = `<img src="${base64}" style="max-width:100%;max-height:200px;border-radius:var(--radius-sm);">`;
-          window._tempEditInspirationImage = base64;
-          window._removeInspirationImage = false;
-        });
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          openImageEditor(e.target.result, (editedBase64) => {
+            preview.innerHTML = `<img src="${editedBase64}" style="max-width:100%;max-height:200px;border-radius:var(--radius-sm);border:1px solid var(--border-color);">`;
+            window._tempEditInspirationImage = editedBase64;
+            window._removeInspirationImage = false;
+            showToast('📷 图片已编辑');
+          });
+        };
+        reader.readAsDataURL(file);
       }
     }
 
@@ -7816,8 +8159,8 @@
 
     function init() {
       // 强制清除旧缓存（v21 密码锁+同步加密）
-      if (localStorage.getItem('penny_version') !== 'v21') {
-        localStorage.setItem('penny_version', 'v21');
+      if (localStorage.getItem('penny_version') !== 'v22') {
+        localStorage.setItem('penny_version', 'v22');
         // 注销旧Service Worker
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(regs => {
@@ -7941,14 +8284,14 @@
             caches.keys().then(names => {
               Promise.all(names.map(name => caches.delete(name))).then(() => {
                 // 重新注册新的SW
-                navigator.serviceWorker.register('sw.js?v=21').then(reg => {
+                navigator.serviceWorker.register('sw.js?v=22').then(reg => {
                   console.log('SW v5 registered');
                 }).catch(err => console.log('SW注册失败:', err));
               });
             });
           });
         }).catch(() => {
-          navigator.serviceWorker.register('sw.js?v=21');
+          navigator.serviceWorker.register('sw.js?v=22');
         });
       }
 

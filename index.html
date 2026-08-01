@@ -10,14 +10,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Penny工作台">
   <meta name="theme-color" content="#FF69B4">
-  <link rel="manifest" href="manifest.json?v=23">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png?v=23">
-  <link rel="icon" type="image/png" href="icons/favicon-32-v2.png?v=23">
+  <link rel="manifest" href="manifest.json?v=24">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png?v=24">
+  <link rel="icon" type="image/png" href="icons/favicon-32-v2.png?v=24">
   <title>Penny的工作台</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="excel_data.js?v=23"></script>
-  <script src="industry_pool.js?v=23"></script>
-  <script src="vocab_pool.js?v=23"></script>
+  <script src="excel_data.js?v=24"></script>
+  <script src="industry_pool.js?v=24"></script>
+  <script src="vocab_pool.js?v=24"></script>
   <style>
     /* ========== CSS变量 - 粉色可爱主题 ========== */
     :root {
@@ -2334,7 +2334,7 @@
                 <div class="list-item-icon">${i.importance==='高'?'🔴':i.importance==='中'?'🟡':'🟢'}</div>
                 <div class="list-item-content">
                   <div class="list-item-title">${Utils.escape(i.title)}</div>
-                  <div class="list-item-subtitle">${Utils.escape(i.source || '')} · <span class="tag ${i.importance==='高'?'tag-red':i.importance==='中'?'tag-orange':'tag-blue'}" style="font-size:10px;">${i.importance}</span> · <span class="tag tag-purple" style="font-size:10px;">${i.tag}</span></div>
+                  <div class="list-item-subtitle">${Utils.escape(i.source || '')} · <span class="tag ${i.importance==='高'?'tag-red':i.importance==='中'?'tag-orange':'tag-blue'}" style="font-size:10px;">${i.importance}</span> · <span class="tag tag-purple" style="font-size:10px;">${i.tag}</span>${i.url ? ` · <a href="${Utils.escape(i.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--pink-600);text-decoration:none;">🔗原文</a>` : ''}</div>
                 </div>
               </div>
             `).join('')
@@ -3917,10 +3917,11 @@
                 <div style="flex:1;">
                   <div style="font-weight:600;font-size:13px;color:var(--text-primary);">${Utils.escape(i.title)}</div>
                   <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">${(() => { const cn = i.summary.match(/CN:\s*([^\\n]+)/); const text = cn ? cn[1] : i.summary.substring(0,60); return Utils.escape(text.length > 50 ? text.substring(0,50) + '...' : text); })()}</div>
-                  <div style="display:flex;gap:4px;margin-top:4px;">
+                  <div style="display:flex;gap:4px;margin-top:4px;align-items:center;flex-wrap:wrap;">
                     <span class="tag ${i.importance==='高'?'tag-red':i.importance==='中'?'tag-orange':'tag-blue'}" style="font-size:10px;">${i.importance}</span>
                     <span class="tag tag-purple" style="font-size:10px;">${i.tag}</span>
                     <span style="font-size:10px;color:var(--text-light);">${Utils.escape(i.source)}</span>
+                    ${i.url ? `<a href="${Utils.escape(i.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:10px;color:var(--pink-600);text-decoration:none;margin-left:auto;">🔗 原文</a>` : ''}
                   </div>
                 </div>
               </div>
@@ -3970,7 +3971,10 @@
             </div>
           </div>
           ${i.summary ? `<div class="list-item-subtitle" style="margin-bottom:6px;">${Utils.escape(i.summary.substring(0,80))}${i.summary.length>80?'...':''}</div>` : ''}
-          <div class="list-item-subtitle">${Utils.escape(i.source || '')} · ${Utils.relativeDate(i.date)} · ${i.readStatus || '未读'}</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="list-item-subtitle" style="flex:1;">${Utils.escape(i.source || '')} · ${Utils.relativeDate(i.date)} · ${i.readStatus || '未读'}</span>
+            ${i.url ? `<a href="${Utils.escape(i.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:11px;color:var(--pink-600);text-decoration:none;white-space:nowrap;">🔗 原文</a>` : ''}
+          </div>
         </div>
       `).join('');
     }
@@ -4001,6 +4005,7 @@
           importance: item.importance,
           readStatus: '未读',
           source: item.source,
+          url: item.url || '',
           date: new Date().toISOString(),
           createdAt: new Date().toISOString()
         };
@@ -4100,7 +4105,7 @@
         <div class="detail-row"><div class="detail-label">重要程度</div><div class="detail-value"><span class="tag ${i.importance==='高'?'tag-red':i.importance==='中'?'tag-orange':'tag-blue'}">${i.importance || '中'}</span></div></div>
         <div class="detail-row"><div class="detail-label">阅读状态</div><div class="detail-value">${i.readStatus || '未读'}</div></div>
         <div class="detail-row"><div class="detail-label">日期</div><div class="detail-value">${Utils.formatDate(i.date)}</div></div>
-        ${i.url ? `<div class="detail-row"><div class="detail-label">链接</div><div class="detail-value"><a href="${Utils.escape(i.url)}" target="_blank" style="color:var(--pink-600)">查看原文 ↗</a></div></div>` : ''}
+        ${i.url ? `<div class="detail-row"><div class="detail-label">原文链接</div><div class="detail-value"><a href="${Utils.escape(i.url)}" target="_blank" rel="noopener" style="color:var(--pink-600);font-weight:600;">🔗 查看原文 ↗</a><button class="btn btn-sm" style="background:var(--pink-500);color:#fff;margin-left:8px;border-radius:var(--radius-sm);" onclick="window.open('${Utils.escape(i.url)}','_blank')">打开</button></div></div>` : ''}
         ${i.summary ? `<div class="detail-row"><div class="detail-label">摘要</div><div class="detail-value" style="white-space:pre-wrap;">${Utils.escape(i.summary)}</div></div>` : ''}
       `, `<button class="btn btn-danger" onclick="deleteIndustry('${i.id}')">删除</button><button class="btn btn-secondary" onclick="Modal.hide()">关闭</button>`);
     }
@@ -8180,8 +8185,8 @@
 
     function init() {
       // 强制清除旧缓存（v21 密码锁+同步加密）
-      if (localStorage.getItem('penny_version') !== 'v23') {
-        localStorage.setItem('penny_version', 'v23');
+      if (localStorage.getItem('penny_version') !== 'v24') {
+        localStorage.setItem('penny_version', 'v24');
         // 注销旧Service Worker
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(regs => {
@@ -8305,14 +8310,14 @@
             caches.keys().then(names => {
               Promise.all(names.map(name => caches.delete(name))).then(() => {
                 // 重新注册新的SW
-                navigator.serviceWorker.register('sw.js?v=23').then(reg => {
+                navigator.serviceWorker.register('sw.js?v=24').then(reg => {
                   console.log('SW v5 registered');
                 }).catch(err => console.log('SW注册失败:', err));
               });
             });
           });
         }).catch(() => {
-          navigator.serviceWorker.register('sw.js?v=23');
+          navigator.serviceWorker.register('sw.js?v=24');
         });
       }
 

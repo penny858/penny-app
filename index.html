@@ -10,14 +10,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Penny工作台">
   <meta name="theme-color" content="#FF69B4">
-  <link rel="manifest" href="manifest.json?v=26">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png?v=26">
-  <link rel="icon" type="image/png" href="icons/favicon-32-v2.png?v=26">
+  <link rel="manifest" href="manifest.json?v=27">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png?v=27">
+  <link rel="icon" type="image/png" href="icons/favicon-32-v2.png?v=27">
   <title>Penny的工作台</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="excel_data.js?v=26"></script>
-  <script src="industry_pool.js?v=26"></script>
-  <script src="vocab_pool.js?v=26"></script>
+  <script src="excel_data.js?v=27"></script>
+  <script src="industry_pool.js?v=27"></script>
+  <script src="vocab_pool.js?v=27"></script>
   <style>
     /* ========== CSS变量 - 粉色可爱主题 ========== */
     :root {
@@ -1898,6 +1898,11 @@
             <span>已成交客户</span>
             <span class="nav-badge" id="badge-closedCustomers">0</span>
           </div>
+          <div class="nav-item nav-sub" data-page="overdueCustomers">
+            <span class="nav-icon">⚠️</span>
+            <span>逾期跟进</span>
+            <span class="nav-badge" id="badge-overdue" style="background:#F44336;">0</span>
+          </div>
           <div class="nav-item" data-page="projects">
             <span class="nav-icon">📊</span>
             <span>项目推进</span>
@@ -2211,6 +2216,7 @@
       newCustomers: { title: '新开发客户', render: renderNewCustomers, fab: true },
       customers: { title: '客户管理', render: renderCustomers, fab: true },
       closedCustomers: { title: '已成交客户', render: renderClosedCustomers, fab: true },
+      overdueCustomers: { title: '逾期跟进', render: renderOverdueCustomers },
       projects: { title: '项目推进', render: renderProjects, fab: true },
       industry: { title: '行业动态', render: renderIndustry, fab: true },
       inspirations: { title: '灵感收集箱', render: renderInspirations, fab: true },
@@ -2258,10 +2264,13 @@
     // ========== 更新Badge ==========
     function updateBadges() {
       const allCustomers = DB.get('customers');
+      const today = Utils.todayStr();
+      const overdueCustomers = allCustomers.filter(c => c.nextFollowDate && c.nextFollowDate < today);
       const badges = {
         newCustomers: allCustomers.filter(c => NEW_DEV_STAGES.includes(c.stage)).length,
         customers: allCustomers.length,
         closedCustomers: allCustomers.filter(c => CLOSED_STAGES.includes(c.stage)).length,
+        overdue: overdueCustomers.length,
         projects: DB.get('projects').filter(p => p.status !== '成交' && p.status !== '流失').length,
         industry: DB.get('industry').length,
         inspirations: DB.get('inspirations').length,
@@ -2296,7 +2305,7 @@
       const today = new Date().toISOString().split('T')[0];
       const newDevCustomers = customers.filter(c => ['线索','初触','需求','方案','谈判'].includes(c.stage));
       const closedCustomers = customers.filter(c => ['成交','售后','复购'].includes(c.stage));
-      const followupReminders = customers.filter(c => c.nextFollowDate && c.nextFollowDate <= today).sort((a,b) => a.nextFollowDate.localeCompare(b.nextFollowDate));
+      const followupReminders = customers.filter(c => c.nextFollowDate && c.nextFollowDate <= today && c.level !== 'D级潜在').sort((a,b) => a.nextFollowDate.localeCompare(b.nextFollowDate));
       const learning = DB.get('learning').filter(l => l.status !== '已完成');
 
       const todayIndustry = getDailyIndustry(false);
@@ -3468,6 +3477,45 @@ Penny`;
           filterProjectsList();
         }
       }, 100);
+    }
+
+    function renderOverdueCustomers() {
+      const content = document.getElementById('content');
+      const allCustomers = DB.get('customers');
+      const today = Utils.todayStr();
+      const overdueCustomers = allCustomers.filter(c => c.nextFollowDate && c.nextFollowDate < today).sort((a,b) => a.nextFollowDate.localeCompare(b.nextFollowDate));
+
+      content.innerHTML = `
+        <div class="customer-category-tabs">
+          <div class="category-tab active">⚠️ 逾期跟进 (${overdueCustomers.length})</div>
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;padding:8px;background:#FFF3F3;border-radius:var(--radius-md);border-left:3px solid var(--danger);">
+          ⚠️ 以下客户已超过计划跟进日期，请尽快联系！逾期天数越多越容易流失。
+        </div>
+        ${overdueCustomers.length === 0 ? '<div class="empty-state"><div class="empty-state-icon">🎉</div><div class="empty-state-text">太棒了！没有逾期需要跟进的客户</div></div>' :
+          overdueCustomers.map(c => {
+            const overdueDays = Math.ceil((new Date(today) - new Date(c.nextFollowDate)) / 86400000);
+            const stageInfo = getStageInfo(c.stage);
+            const lp = LEVEL_PROBABILITY[c.level] || LEVEL_PROBABILITY['D级潜在'];
+            return `
+              <div class="list-item" onclick="showCustomerDetail('${c.id}')">
+                <div class="list-item-icon">⚠️</div>
+                <div class="list-item-content">
+                  <div class="list-item-title">${Utils.escape(c.name)}${c.company ? ' · ' + Utils.escape(c.company) : ''}</div>
+                  <div class="list-item-subtitle">
+                    <span class="tag ${stageInfo.tag}">${c.stage}</span>
+                    <span class="tag ${lp.tag}">${c.level}</span>
+                    <span class="follow-alert follow-alert-danger">逾期${overdueDays}天</span>
+                    ${c.country ? '<span style="margin-left:4px;font-size:11px;">🌍 ' + Utils.escape(c.country) + '</span>' : ''}
+                  </div>
+                  ${c.latestFeedback ? `<div class="list-item-subtitle" style="margin-top:2px;color:var(--pink-600);font-size:12px;">💬 ${Utils.escape(c.latestFeedback.substring(0,60))}${c.latestFeedback.length > 60 ? '...' : ''}</div>` : ''}
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();navigate('customers');setTimeout(()=>showCustomerDetail('${c.id}'),200)">跟进</button>
+              </div>
+            `;
+          }).join('')
+        }
+      `;
     }
 
     function renderCustomerPage() {
@@ -5133,6 +5181,7 @@ Penny`;
       Modal.hide();
       renderInspirations();
       updateBadges();
+      autoCloudBackup();
       showToast('💡 灵感已记录');
     }
 
@@ -5237,6 +5286,7 @@ Penny`;
         DB.set('inspirations', items);
         Modal.hide();
         renderInspirations();
+        autoCloudBackup();
         showToast('已更新');
         window._tempEditInspirationImage = null;
         window._removeInspirationImage = false;
@@ -5302,6 +5352,7 @@ Penny`;
       DB.set('inspirations', DB.get('inspirations').filter(i => i.id !== id));
       renderInspirations();
       updateBadges();
+      autoCloudBackup();
       showToast('已删除');
     }
 
@@ -7622,6 +7673,139 @@ Penny`;
       .catch(e => showToast(`❌ 同步失败: ${e.message}`));
     }
 
+    // ========== 自动云备份（灵感等关键数据保护） ==========
+    let _autoBackupTimer = null;
+    const AUTO_BACKUP_KEYS = ['inspirations','customers','customerFollowups','projects','materials','trends','learning','sidehustle','todos'];
+
+    function autoCloudBackup() {
+      // 防抖：3000ms内多次调用只执行一次
+      clearTimeout(_autoBackupTimer);
+      _autoBackupTimer = setTimeout(() => {
+        const token = localStorage.getItem('penny_github_token');
+        if (!token) return; // 未连接GitHub则跳过
+
+        const allData = {};
+        let hasData = false;
+        AUTO_BACKUP_KEYS.forEach(k => {
+          const val = DB.get(k);
+          if (val && (Array.isArray(val) && val.length > 0)) {
+            allData[k] = val;
+            hasData = true;
+          }
+        });
+
+        if (!hasData) return;
+
+        // 额外关键数据
+        const extraKeys = ['penny_dailyVocab','penny_knownVocab','penny_dailyQuote','penny_checkin_date','penny_visit_streak','penny_last_visit','penny_side_templates_created'];
+        extraKeys.forEach(k => {
+          const val = localStorage.getItem(k);
+          if (val) {
+            try { allData[k] = JSON.parse(val); } catch(e) { allData[k] = val; }
+          }
+        });
+
+        allData._syncTime = new Date().toISOString();
+        allData._version = localStorage.getItem('penny_version');
+
+        const jsonStr = JSON.stringify(allData);
+        const encStr = encryptData(jsonStr, getSyncKey());
+
+        fetch(`https://api.github.com/repos/penny858/penny-app/contents/sync_data.json?ref=main`, {
+          headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
+        })
+        .then(r => r.status === 200 ? r.json().then(d => d.sha) : null)
+        .then(sha => {
+          const body = {
+            message: `☁️ 自动备份 - ${new Date().toLocaleString('zh-CN')}`,
+            content: btoa(unescape(encodeURIComponent(encStr))),
+            branch: 'main'
+          };
+          if (sha) body.sha = sha;
+          return fetch(`https://api.github.com/repos/penny858/penny-app/contents/sync_data.json`, {
+            method: 'PUT',
+            headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json', Accept: 'application/vnd.github.v3+json' },
+            body: JSON.stringify(body)
+          });
+        })
+        .then(r => r.json())
+        .then(d => {
+          if (d.content) {
+            localStorage.setItem('penny_last_auto_backup', new Date().toLocaleString('zh-CN'));
+            console.log('✅ 自动备份完成');
+          }
+        })
+        .catch(e => console.log('自动备份失败:', e.message));
+      }, 3000);
+    }
+
+    // 启动时自动检测并恢复云端数据
+    function autoCloudRestore() {
+      const token = localStorage.getItem('penny_github_token');
+      if (!token) return;
+
+      // 检查本地灵感数据是否为空
+      const inspirations = DB.get('inspirations');
+      if (inspirations.length > 0) return; // 有数据就不恢复
+
+      // 检查是否刚清除了数据（用户可能正在手动操作）
+      const justCleared = sessionStorage.getItem('penny_just_cleared');
+      if (justCleared === 'yes') return;
+
+      console.log('🔍 检测到灵感数据为空，尝试从云端恢复…');
+
+      fetch(`https://api.github.com/repos/penny858/penny-app/contents/sync_data.json?ref=main`, {
+        headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
+      })
+      .then(r => {
+        if (r.status === 404) { console.log('云端暂无备份'); return null; }
+        return r.json();
+      })
+      .then(d => {
+        if (!d) return;
+        try {
+          const rawStr = decodeURIComponent(escape(atob(d.content)));
+          const jsonStr = decryptData(rawStr, getSyncKey());
+          const allData = JSON.parse(jsonStr);
+
+          // 只恢复灵感数据（不全量覆盖，避免覆盖用户在其他设备上的最新操作）
+          if (allData.inspirations && allData.inspirations.length > 0) {
+            DB.set('inspirations', allData.inspirations);
+            localStorage.setItem('penny_last_auto_restore', new Date().toLocaleString('zh-CN'));
+            console.log(`✅ 从云端恢复了 ${allData.inspirations.length} 条灵感`);
+            showToast(`✅ 已从云端恢复 ${allData.inspirations.length} 条灵感记录`);
+            // 延迟刷新灵感列表
+            setTimeout(() => {
+              if (currentPage === 'inspirations') renderInspirations();
+              updateBadges();
+            }, 500);
+          }
+
+          // 如果客户数据也为空，也恢复客户数据
+          const customers = DB.get('customers');
+          if (customers.length === 0 && allData.customers && allData.customers.length > 0) {
+            DB.set('customers', allData.customers);
+            if (allData.customerFollowups) DB.set('customerFollowups', allData.customerFollowups);
+            console.log(`✅ 从云端恢复了 ${allData.customers.length} 个客户`);
+            showToast(`✅ 已从云端恢复 ${allData.customers.length} 个客户数据`);
+          }
+
+          // 恢复其他可能丢失的数据
+          const restoreKeys = ['projects','materials','trends','learning','sidehustle','todos'];
+          restoreKeys.forEach(k => {
+            const local = DB.get(k);
+            if (local.length === 0 && allData[k] && allData[k].length > 0) {
+              DB.set(k, allData[k]);
+              console.log(`✅ 从云端恢复了 ${k}: ${allData[k].length} 条`);
+            }
+          });
+        } catch(e) {
+          console.log('自动恢复失败:', e.message);
+        }
+      })
+      .catch(e => console.log('自动恢复请求失败:', e.message));
+    }
+
     // 本地导出
     function exportLocalData() {
       const allData = {};
@@ -9197,8 +9381,8 @@ Penny`;
 
     function init() {
       // 强制清除旧缓存（v21 密码锁+同步加密）
-      if (localStorage.getItem('penny_version') !== 'v26') {
-        localStorage.setItem('penny_version', 'v26');
+      if (localStorage.getItem('penny_version') !== 'v27') {
+        localStorage.setItem('penny_version', 'v27');
         // 注销旧Service Worker
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(regs => {
@@ -9282,6 +9466,9 @@ Penny`;
       // 更新Badge
       updateBadges();
 
+      // 自动从云端恢复丢失的数据
+      autoCloudRestore();
+
       // 每日金句
       renderDailyQuote();
       document.getElementById('quoteRefresh')?.addEventListener('click', () => {
@@ -9322,14 +9509,14 @@ Penny`;
             caches.keys().then(names => {
               Promise.all(names.map(name => caches.delete(name))).then(() => {
                 // 重新注册新的SW
-                navigator.serviceWorker.register('sw.js?v=26').then(reg => {
+                navigator.serviceWorker.register('sw.js?v=27').then(reg => {
                   console.log('SW v5 registered');
                 }).catch(err => console.log('SW注册失败:', err));
               });
             });
           });
         }).catch(() => {
-          navigator.serviceWorker.register('sw.js?v=26');
+          navigator.serviceWorker.register('sw.js?v=27');
         });
       }
 

@@ -10,14 +10,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Penny工作台">
   <meta name="theme-color" content="#FF69B4">
-  <link rel="manifest" href="manifest.json?v=24">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png?v=24">
-  <link rel="icon" type="image/png" href="icons/favicon-32-v2.png?v=24">
+  <link rel="manifest" href="manifest.json?v=25">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png?v=25">
+  <link rel="icon" type="image/png" href="icons/favicon-32-v2.png?v=25">
   <title>Penny的工作台</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="excel_data.js?v=24"></script>
-  <script src="industry_pool.js?v=24"></script>
-  <script src="vocab_pool.js?v=24"></script>
+  <script src="excel_data.js?v=25"></script>
+  <script src="industry_pool.js?v=25"></script>
+  <script src="vocab_pool.js?v=25"></script>
   <style>
     /* ========== CSS变量 - 粉色可爱主题 ========== */
     :root {
@@ -1710,6 +1710,149 @@
       background: var(--pink-500);
       color: white;
     }
+
+    /* ========== 跟进攻略地图 ========== */
+    .playbook-card {
+      background: linear-gradient(135deg, #fff9fc, var(--pink-50));
+      border: 1.5px solid var(--pink-200);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      margin: 12px 0;
+    }
+    .playbook-goal {
+      background: var(--pink-500);
+      color: #fff;
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .playbook-section {
+      margin-bottom: 10px;
+    }
+    .playbook-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--pink-600);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .playbook-action {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      padding: 4px 0;
+      font-size: 12px;
+      color: var(--text-primary);
+      cursor: pointer;
+      line-height: 1.5;
+    }
+    .playbook-action input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin-top: 1px;
+      flex-shrink: 0;
+      accent-color: var(--pink-500);
+    }
+    .playbook-action.done {
+      text-decoration: line-through;
+      color: var(--text-light);
+    }
+    .playbook-item {
+      font-size: 12px;
+      color: var(--text-secondary);
+      padding: 2px 0;
+      line-height: 1.5;
+    }
+    .playbook-trap {
+      background: #FFF3E0;
+      border-left: 3px solid #FF9800;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 11px;
+      color: #E65100;
+      margin-top: 4px;
+    }
+    .playbook-signal {
+      background: #E8F5E9;
+      border-left: 3px solid #4CAF50;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 11px;
+      color: #2E7D32;
+      margin-top: 4px;
+    }
+    .playbook-stage-tabs {
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      margin-bottom: 8px;
+      padding-bottom: 2px;
+    }
+    .playbook-stage-tab {
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      white-space: nowrap;
+      background: rgba(255,255,255,0.7);
+      color: var(--text-secondary);
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+    }
+    .playbook-stage-tab.active {
+      background: var(--pink-500);
+      color: #fff;
+      border-color: var(--pink-500);
+    }
+
+    /* ========== 建联话术生成器 ========== */
+    .outreach-type-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .outreach-type-card {
+      padding: 10px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--border-color);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .outreach-type-card:active {
+      transform: scale(0.97);
+    }
+    .outreach-type-card.selected {
+      border-color: var(--pink-500);
+      background: var(--pink-50);
+    }
+    .outreach-type-icon {
+      font-size: 24px;
+    }
+    .outreach-type-name {
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .outreach-preview {
+      background: var(--pink-50);
+      border: 1px solid var(--pink-200);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      color: var(--text-primary);
+      max-height: 300px;
+      overflow-y: auto;
+    }
   </style>
 </head>
 <body>
@@ -2539,6 +2682,302 @@
       return INDUSTRY_PAIN_POINTS[industry] || INDUSTRY_PAIN_POINTS['其他'];
     }
 
+    // ========== 跟进攻略地图 ==========
+    const STAGE_PLAYBOOK = {
+      '线索': {
+        goal: '🎯 确认客户真实性和基本需求方向',
+        actions: ['通过官网/社媒/展会资料了解客户业务', '找到关键联系人（采购/老板/产品经理）', '发送首次建联消息（邮件/社媒私信）', '记录客户基本画像'],
+        questions: ['贵司主营什么品类？', '目前采购渠道是自产还是代采？', '年采购量大概什么规模？', '目标市场是哪些地区？'],
+        materials: ['公司简介PPT（1页版）', '核心产品目录'],
+        advanceSignal: '客户回复了基本信息，确认有采购需求 → 可推进到「初触」',
+        traps: '不要在没了解需求前就报价，不要一上来发太多产品信息造成信息轰炸'
+      },
+      '初触': {
+        goal: '🎯 建立信任，深入了解客户痛点和采购流程',
+        actions: ['安排首次电话/视频沟通（15-30分钟）', '了解客户当前供应商和不满之处', '摸清客户决策链和关键人', '发送针对性产品资料'],
+        questions: ['目前用的哪家供应商？满意和不满意的地方是什么？', '采购决策流程是怎样的？谁是最终决策人？', '对价格/质量/交期，最看重哪个？', '有没有紧急采购计划？'],
+        materials: ['针对性产品推荐方案', '客户案例/合作背书', '工厂资质/验厂报告'],
+        advanceSignal: '客户主动询问具体产品参数/价格/起订量 → 可推进到「需求」',
+        traps: '不要急于推销，先倾听；不要忽略决策链，只跟一个人聊'
+      },
+      '需求': {
+        goal: '🎯 明确客户具体需求，确认匹配度',
+        actions: ['拿到客户的具体产品需求清单', '确认目标价格范围和预算', '了解起订量要求和交期期望', '内部评估可行性和报价方案'],
+        questions: ['需要什么品类/款式/面料/功能？', '目标售价是多少？期望采购价？', '起订量MOQ要求？能否接受分批交货？', '首次订单希望什么时候交付？'],
+        materials: ['匹配产品详细资料', '初步报价单', '打样流程说明'],
+        advanceSignal: '客户确认需求匹配，同意看样品/报价 → 可推进到「方案」',
+        traps: '不要模糊报价，要给明确价格区间；不要承诺做不到的交期'
+      },
+      '方案': {
+        goal: '🎯 提供方案+样品，让客户看到实物和细节',
+        actions: ['安排打样并跟踪样品质量', '提供详细报价方案（含贸易条款）', '发送样品给客户确认', '跟进样品反馈，调整方案'],
+        questions: ['样品收到后反馈如何？需要调整什么？', '报价方案有疑问吗？', '对贸易条款（FOB/CIF/DDP）有偏好吗？', '付款方式接受T/T还是L/C？'],
+        materials: ['确认样品', '正式报价单（含贸易条款）', '产品检测报告/认证'],
+        advanceSignal: '客户确认样品OK，开始谈具体订单细节 → 可推进到「谈判」',
+        traps: '打样要快（7-10天），慢了客户就跑了；样品质量要高于大货水平'
+      },
+      '谈判': {
+        goal: '🎯 敲定订单细节，促成签约',
+        actions: ['谈判价格/起订量/交期/付款方式', '处理客户异议（价格高/交期长/起订多）', '发送PI/合同草案', '确认订单并收款'],
+        questions: ['价格方面还有空间吗？能否接受梯度报价？', '首单能否接受我们标准付款条件？', '交期方面有没有弹性？', '后续返单的频率和量大概是怎样的？'],
+        materials: ['PI形式发票', '销售合同', '付款指引'],
+        advanceSignal: '客户确认PI并安排定金 → 成交！',
+        traps: '不要一味让步，要有条件交换；定金没到不算成交'
+      },
+      '成交': {
+        goal: '🎯 交付顺利，建立长期合作基础',
+        actions: ['跟踪大货生产进度', '及时汇报生产节点（裁剪/缝制/包装）', '安排验货和发货', '确认到货并跟进客户满意度'],
+        questions: ['生产进度有没有需要调整的地方？', '物流安排有没有特殊要求？', '到货后质量检查结果如何？'],
+        materials: ['生产进度周报', '验货报告', '发货通知'],
+        advanceSignal: '客户确认到货满意，表达返单意向 → 进入「售后」',
+        traps: '成交后不要失联，生产异常要主动告知，不要等客户来问'
+      },
+      '售后': {
+        goal: '🎯 解决售后问题，促成复购',
+        actions: ['主动跟进到货后使用情况', '及时处理质量问题/退换货', '提供新品推荐和季节性产品预告', '维护客情关系（节日问候/行业资讯分享）'],
+        questions: ['产品销售反馈如何？消费者有什么评价？', '有没有需要改进的地方？', '下一季度的采购计划是什么？', '有没有新品需求？'],
+        materials: ['新品目录', '季节性产品推荐', '行业趋势报告'],
+        advanceSignal: '客户下达返单或新品询价 → 进入「复购」',
+        traps: '不要只在不满意时才联系，日常维护比灭火更重要'
+      },
+      '复购': {
+        goal: '🎯 稳定供应关系，扩大合作品类',
+        actions: ['建立稳定返单节奏（季度/年度计划）', '主动推荐新品类扩展合作', '提供VIP政策（优先排产/价格优惠）', '深化客情（拜访/展会邀约）'],
+        questions: ['今年整体采购计划是多少？能否做年度框架协议？', '有没有其他品类可以合作？', '对我们的服务有什么建议？'],
+        materials: ['年度合作框架', '新品类产品线介绍', 'VIP客户政策'],
+        advanceSignal: '签订年度框架协议或扩展合作品类',
+        traps: '不要因为稳定了就降低服务标准，老客户比新客户更重要'
+      }
+    };
+
+    // ========== 建联话术模板 ==========
+    const OUTREACH_TEMPLATES = {
+      cold_email: {
+        name: '冷邮件',
+        icon: '📧',
+        generate(c) {
+          const company = c.company || c.name;
+          const industry = c.industry || '内衣';
+          const country = c.country || '';
+          const countryText = country ? `在${country}市场` : '';
+          return `Subject: ${company} × Penny — 内衣供应链合作探讨
+
+Hi ${c.name},
+
+注意到 ${company} ${countryText}的活跃表现。我们是一家专注内衣/贴身衣物制造15年的供应商，服务过众多${industry}客户。
+
+想了解贵司目前是否有内衣/贴身衣物采购需求？我们可以提供：
+• OEM/ODM 全品类定制（文胸/内裤/家居服/运动内衣/塑身衣）
+• 快速打样（7-10天）
+• 灵活起订量，支持小批量试单
+• 有竞争力的价格和稳定交期
+
+方便安排15分钟简短沟通吗？期待回复。
+
+Best regards,
+Penny
+WhatsApp/WeChat: [你的联系方式]`;
+        }
+      },
+      social_dm: {
+        name: '社媒私信',
+        icon: '💬',
+        generate(c) {
+          const company = c.company || c.name;
+          const industry = c.industry || '';
+          return `Hi ${c.name}! 👋
+
+我是Penny，一家内衣制造工厂的业务负责人。看到${company}在${industry}领域的专业表现，觉得我们可能有合作机会。
+
+我们工厂做内衣15年了，主打OEM/ODM，品类齐全（文胸/内裤/家居服/运动/塑身），打样快、起订灵活。
+
+不知道贵司有没有内衣采购需求？如果有兴趣，我可以发一些产品目录和案例给你看看 📎
+
+期待聊天！`;
+        }
+      },
+      show_follow: {
+        name: '展会加微',
+        icon: '🎪',
+        generate(c) {
+          const company = c.company || c.name;
+          return `${c.name}您好！我是Penny 😊
+
+今天在展会上和您简单聊了${company}的产品需求，很高兴认识您！
+
+回去后我整理了一份适合贵司的产品方案，包含：
+• 您感兴趣的产品款式和报价
+• 打样时间安排
+• 起订量说明
+
+方便发您看看吗？有任何问题随时沟通～
+
+Penny / [公司名] 内衣制造`;
+        }
+      },
+      referral: {
+        name: '转介绍',
+        icon: '🤝',
+        generate(c) {
+          const company = c.company || c.name;
+          return `Hi ${c.name},
+
+我是Penny，[老客户名]介绍我跟您联系。TA之前在我们工厂做过内衣订单，对我们的质量和服务还比较认可，推荐我跟您对接。
+
+我们工厂专注内衣制造15年，优势：
+• 品类全：文胸/内裤/家居服/运动内衣/塑身衣
+• 打样快：7-10天出样
+• 起订灵活：支持小批量试单
+• 品控严：每批出货前全检
+
+不知道贵司目前有没有采购需求？方便的话可以先聊聊需求，我发些产品资料给您参考。
+
+Penny / [公司名]`;
+        }
+      }
+    };
+
+    // 攻略行动项勾选状态管理
+    function getPlaybookProgress(customerId, stage) {
+      const key = `penny_playbook_${customerId}`;
+      const data = JSON.parse(localStorage.getItem(key) || '{}');
+      return data[stage] || [];
+    }
+
+    function togglePlaybookAction(customerId, stage, actionIdx) {
+      const key = `penny_playbook_${customerId}`;
+      const data = JSON.parse(localStorage.getItem(key) || '{}');
+      if (!data[stage]) data[stage] = [];
+      const idx = data[stage].indexOf(actionIdx);
+      if (idx >= 0) {
+        data[stage].splice(idx, 1);
+      } else {
+        data[stage].push(actionIdx);
+      }
+      localStorage.setItem(key, JSON.stringify(data));
+      // 更新DOM
+      const el = event.target.closest('.playbook-action');
+      if (el) {
+        el.classList.toggle('done');
+        const cb = el.querySelector('input[type="checkbox"]');
+        if (cb) cb.checked = idx < 0;
+      }
+    }
+
+    function renderStagePlaybook(stage, customerId) {
+      const pb = STAGE_PLAYBOOK[stage];
+      if (!pb) return '';
+      const doneActions = getPlaybookProgress(customerId, stage);
+      return `
+        <div class="playbook-card">
+          <div class="playbook-goal">${pb.goal}</div>
+
+          <div class="playbook-section">
+            <div class="playbook-section-title">📋 关键行动</div>
+            ${pb.actions.map((a, i) => `
+              <div class="playbook-action ${doneActions.includes(i) ? 'done' : ''}" onclick="togglePlaybookAction('${customerId}','${stage}',${i})">
+                <input type="checkbox" ${doneActions.includes(i) ? 'checked' : ''} readonly>
+                <span>${a}</span>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="playbook-section">
+            <div class="playbook-section-title">❓ 该问的问题</div>
+            ${pb.questions.map(q => `<div class="playbook-item">• ${q}</div>`).join('')}
+          </div>
+
+          <div class="playbook-section">
+            <div class="playbook-section-title">📎 该发的材料</div>
+            ${pb.materials.map(m => `<div class="playbook-item">📎 ${m}</div>`).join('')}
+          </div>
+
+          <div class="playbook-signal">✅ ${pb.advanceSignal}</div>
+          <div class="playbook-trap">⚠️ ${pb.traps}</div>
+        </div>
+      `;
+    }
+
+    function switchPlaybookStage(stage, customerId) {
+      document.querySelectorAll('.playbook-stage-tab').forEach(t => t.classList.remove('active'));
+      const tabs = document.querySelectorAll('.playbook-stage-tab');
+      const stages = ['线索','初触','需求','方案','谈判','成交','售后','复购'];
+      const idx = stages.indexOf(stage);
+      if (idx >= 0 && tabs[idx]) tabs[idx].classList.add('active');
+      document.getElementById('playbookContent').innerHTML = renderStagePlaybook(stage, customerId);
+    }
+
+    // 建联话术生成器
+    function showOutreachGenerator(customerId) {
+      const customers = DB.get('customers');
+      const c = customers.find(c => c.id === customerId);
+      if (!c) return;
+      Modal.show('💬 生成建联话术', `
+        <div class="outreach-type-grid" id="outreachTypes">
+          ${Object.entries(OUTREACH_TEMPLATES).map(([key, t]) => `
+            <div class="outreach-type-card" onclick="selectOutreachType('${key}','${customerId}')">
+              <div class="outreach-type-icon">${t.icon}</div>
+              <div class="outreach-type-name">${t.name}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div id="outreachPreview"></div>
+      `, `<button class="btn btn-secondary" onclick="Modal.hide()">关闭</button>`);
+    }
+
+    function selectOutreachType(type, customerId) {
+      document.querySelectorAll('.outreach-type-card').forEach(c => c.classList.remove('selected'));
+      event.target.closest('.outreach-type-card').classList.add('selected');
+      const customers = DB.get('customers');
+      const c = customers.find(c => c.id === customerId);
+      if (!c) return;
+      const text = OUTREACH_TEMPLATES[type].generate(c);
+      document.getElementById('outreachPreview').innerHTML = `
+        <div class="outreach-preview" id="outreachText" contenteditable="true">${Utils.escape(text)}</div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="btn btn-primary btn-sm" onclick="copyOutreach()">📋 复制</button>
+          <button class="btn btn-secondary btn-sm" onclick="saveOutreachAsFollowup('${customerId}')">📝 存为跟进记录</button>
+        </div>
+      `;
+    }
+
+    function copyOutreach() {
+      const el = document.getElementById('outreachText');
+      if (!el) return;
+      const text = el.innerText;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => showToast('✅ 已复制到剪贴板'));
+      } else {
+        // 降级方案
+        const ta = document.createElement('textarea');
+        ta.value = text;
+      document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('✅ 已复制到剪贴板');
+      }
+    }
+
+    function saveOutreachAsFollowup(customerId) {
+      const el = document.getElementById('outreachText');
+      if (!el) return;
+      const text = el.innerText;
+      const followups = DB.get('customerFollowups');
+      followups.push({
+        id: Utils.uid(),
+        customerId,
+        content: '💬 建联话术：\n' + text,
+        feedback: '',
+        stageAdvanced: false,
+        nextFollowDate: '',
+        date: new Date().toISOString()
+      });
+      DB.set('customerFollowups', followups);
+      showToast('✅ 已存为跟进记录');
+      Modal.hide();
+    }
+
     // 客户阶段分组定义
     const NEW_DEV_STAGES = ['线索','初触','需求','方案','谈判'];
     const CLOSED_STAGES = ['成交','售后','复购'];
@@ -3270,7 +3709,16 @@
         </div>
         ` : ''}
 
-        <div style="font-size:13px;color:var(--pink-600);margin-bottom:12px;border-left:3px solid var(--pink-500);padding-left:8px;">📋 基本信息</div>
+        <!-- 跟进攻略地图 -->
+        <div style="font-size:13px;color:var(--pink-600);margin:12px 0;border-left:3px solid var(--pink-500);padding-left:8px;">🗺️ 跟进攻略地图</div>
+        <div class="playbook-stage-tabs">
+          ${['线索','初触','需求','方案','谈判','成交','售后','复购'].map(s => `
+            <div class="playbook-stage-tab ${s === c.stage ? 'active' : ''}" onclick="switchPlaybookStage('${s}','${c.id}')">${s}</div>
+          `).join('')}
+        </div>
+        <div id="playbookContent">${renderStagePlaybook(c.stage, c.id)}</div>
+
+        <div style="font-size:13px;color:var(--pink-600);margin:12px 0;border-left:3px solid var(--pink-500);padding-left:8px;">📋 基本信息</div>
         <div class="detail-row"><div class="detail-label">等级</div><div class="detail-value"><span class="tag ${lp.tag}">${c.level}</span> <span style="color:var(--text-secondary);font-size:12px;">概率${lp.prob}</span> <span style="color:var(--text-secondary);font-size:12px;">${lp.tip}</span></div></div>
         ${!isClosedCustomer ? `<div class="detail-row"><div class="detail-label">阶段</div><div class="detail-value"><span class="tag ${stageInfo.tag}">${c.stage}</span></div></div>` : ''}
         ${!isClosedCustomer && c.probability ? `<div class="detail-row"><div class="detail-label">成交概率</div><div class="detail-value">${c.probability}%</div></div>` : ''}
@@ -3341,7 +3789,7 @@
             `).join('')
           }
         </div>
-      `, `<button class="btn btn-danger" onclick="deleteCustomer('${c.id}')">删除</button><button class="btn btn-secondary" onclick="Modal.hide()">关闭</button><button class="btn btn-primary" onclick="editCustomer('${c.id}')">编辑</button>`);
+      `, `<button class="btn btn-danger" onclick="deleteCustomer('${c.id}')">删除</button><button class="btn btn-secondary" onclick="showOutreachGenerator('${c.id}')">💬 话术</button><button class="btn btn-secondary" onclick="Modal.hide()">关闭</button><button class="btn btn-primary" onclick="editCustomer('${c.id}')">编辑</button>`);
     }
 
     function changeCustomerStage(id, newStage) {
@@ -8185,8 +8633,8 @@
 
     function init() {
       // 强制清除旧缓存（v21 密码锁+同步加密）
-      if (localStorage.getItem('penny_version') !== 'v24') {
-        localStorage.setItem('penny_version', 'v24');
+      if (localStorage.getItem('penny_version') !== 'v25') {
+        localStorage.setItem('penny_version', 'v25');
         // 注销旧Service Worker
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(regs => {
@@ -8310,14 +8758,14 @@
             caches.keys().then(names => {
               Promise.all(names.map(name => caches.delete(name))).then(() => {
                 // 重新注册新的SW
-                navigator.serviceWorker.register('sw.js?v=24').then(reg => {
+                navigator.serviceWorker.register('sw.js?v=25').then(reg => {
                   console.log('SW v5 registered');
                 }).catch(err => console.log('SW注册失败:', err));
               });
             });
           });
         }).catch(() => {
-          navigator.serviceWorker.register('sw.js?v=24');
+          navigator.serviceWorker.register('sw.js?v=25');
         });
       }
 

@@ -9380,6 +9380,12 @@ Penny`;
     }
 
     function init() {
+      // 如果用户通过旧URL index.html 访问，自动跳转到新入口 app.html
+      if (window.location.pathname.indexOf('app.html') === -1 && window.location.pathname.indexOf('index.html') !== -1) {
+        window.location.replace(window.location.href.replace('index.html', 'app.html'));
+        return;
+      }
+
       // 强制清除旧缓存（v21 密码锁+同步加密）
       if (localStorage.getItem('penny_version') !== 'v28') {
         localStorage.setItem('penny_version', 'v28');
